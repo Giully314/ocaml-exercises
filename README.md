@@ -1,0 +1,1 @@
+Some experiments with the ocaml language following [CS 3110 Data Structures and Functional Programming at Cornell University](https://cs3110.github.io/textbook/cover.html)
