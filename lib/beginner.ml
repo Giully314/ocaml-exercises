@@ -1,141 +1,155 @@
 
-let rec sum = function
-  | [] -> 0
-  | x :: v -> x + sum v
+(* Tail of a list *)
+let rec last = function
+  | [] -> None
+  | [x] -> Some x
+  | _ :: x -> last x
 
-let rec last l = 
+
+let rec last_two (l: 'a list) = 
   match l with
     | [] -> None
-    | [ v ] -> Some v
-    | _ :: v -> last v
-
-let rec last_two l = 
-  match l with
-    | [] | [_] -> None
-    | [ u; v ] -> Some (u, v)
-    | _ :: v -> last_two v
-
-(*Get a list and an index and return an option of the element if present*)
-(* let rec at l i = 
-  match l with 
-    | [] -> None
-    | h :: t -> if i *)
-
-let rec at k = function  
-  | [] -> None
-  | h :: t -> if k = 0 then Some h else at (k - 1) t
+    | [x; y] -> Some (x, y)
+    | _ :: l -> last_two l
 
 
-let rec fib_h n f1 f2 = 
-  if n = 1 then f1 
-  else fib_h (n-1) f2 (f1 + f2)
+(* let rec nth l n = 
+  if n > 0 then 
+    match l with 
+      | [] -> None
+      | _ :: t -> nth t (n-1)
+  else if n == 0 then 
+    match l with 
+      | [] -> None 
+      | h :: _ -> Some h
+  else None *)
 
-let fib_fast n = fib_h n 1 1
+let nth l n =
+  if n < 0 then None
+  else let rec aux l n =
+    match l with 
+      | [] -> None
+      | h :: t -> if n == 0 then Some h else aux t (n-1)
+  in aux l n
 
 
-let rec list_max = function
-  | [] -> None
-  | h :: t -> begin 
-    match list_max t with
-      | None -> Some h
-      | Some m -> Some (max h m)
-  end
+(* let length l = 
+  let rec aux l = 
+    match l with 
+      | [] -> 0
+      | _ :: t -> 1 + aux t 
+  in aux l  *)
 
-
-let rec product = function 
-  | [] -> 1
-  | h :: t -> h * product(t)
-
-let product_tr l = 
-  let rec aux l' acc =
-    match l' with 
+let length l = 
+  let rec aux l acc = 
+    match l with 
       | [] -> acc
-      | h :: t -> aux t (acc * h)
-  in aux l 1
-
-
-let rec concatenate = function 
-  | [] -> ""
-  | h :: t -> h ^ concatenate t
+      | _ :: t -> aux t (acc+1)
+  in aux l 0
   
-let concatenate_tr l = 
-  let rec aux l' acc = 
-    match l' with
-      | [] -> acc
-      | h :: t -> aux t (acc ^ h)
-  in aux l ""
+let rev l =  
+  let rec aux l acc = 
+    match l with
+    | [] -> acc
+    | h :: t -> aux t (h :: acc)
+  in aux l []
 
 
-(* Exercise on patterns *)
-
-let first_is_bigred = function 
-  | "bigred" :: _ -> true 
-  | _ -> false
-
-let has_2_or_4 = function
-  | _ :: _ :: [] -> true
-  | _ :: _ :: _ :: _ :: [] -> true
-  | _ -> false
+let is_palindrome l = 
+  l = rev l
 
 
-let has_first_2_equals = function
-  | x :: y :: _ -> x = y 
-  | _ -> false
+let rle_encode l = 
+  let rec aux count acc = function 
+    | [] -> acc
+    | [x] -> (count + 1, x) :: acc
+    | h1 :: (h2 :: _ as t) -> if h1 = h2 then aux (count + 1) acc t else aux 0 ((count + 1, h1) :: acc) t
+in rev (aux 0 [] l)
 
 
-let fifth_or_zero (l : int list) = 
-  if List.length l >= 5 then List.nth l 5
-  else 0
+type 'a rle = 
+  | One of 'a
+  | Many of int * 'a
 
-(* A better alternative is to pass directly a compare fuction which inverts the standard behavior. *)
-let descending_order (l : int list) = 
-  List.sort Stdlib.compare l |> List.rev
+let rle_encode2 l = 
+  let rec aux count acc = function 
+    | [] -> acc
+    | [x] -> if count = 0 then One x :: acc else Many (count+1, x) :: acc
+    | h1 :: (h2 :: _ as t) -> 
+      if h1 = h2 then aux (count + 1) acc t 
+      else 
+        if count <> 0 then aux 0 (Many (count+1, h1) :: acc) t else aux 0 (One h1 :: acc) t
+in rev (aux 0 [] l)
 
 
-let last_element l = 
-  List.nth l ((List.length l) - 1)
+let duplicate l = 
+  let rec aux acc = function 
+    | [] -> acc
+    | h :: t -> aux (h :: h :: acc) t
+in rev (aux [] l)
 
-let any_zeros l =
-  List.exists (fun x -> x == 0) l
+
+let split list n = 
+  let rec aux n l r = 
+    if n = 0 then rev l, r
+    else match r with 
+      | [] -> rev l, r
+      | h :: t -> aux (n-1) (h :: l) t
+  in aux n [] list
 
 
-(* let take n lst = 
-  let take_size_less_than_n n lst = lst in
-  let take_aux n lst = 
-    match n with
-      0 -> []
-      _ ->  *)
+(* let rec remove_at n = function 
+  | [] -> []
+  | h :: t -> if n = 0 then t else h :: remove_at (n-1) t *)
 
-let take n lst =
-  if n >= List.length lst then lst
-  else  
-    let rec aux n lst =   
-      match lst with
-        | [] -> []
-        | h :: t -> if n = 0 then [] else h :: aux (n-1) t 
-    in aux n lst
+let remove_at n list = 
+  let rec aux n acc l = 
+    if n = 0 then match l with
+      | [] -> rev acc
+      | _ :: t -> List.rev_append acc t
+    else match l with
+      | [] -> rev acc
+      | h :: t -> aux (n-1) (h :: acc) t
+  in aux n [] list
 
-(* This approach is a lot easier to read.
-My approach (above) optimizes the cases where n > size list by returning it directly. (useless without profiling and checking code usage).
-*)
-let rec take_from_solution n lst = 
-  if n = 0 then [] else match lst with
-    | [] -> []
-    | h :: t -> h :: take_from_solution (n-1) t
 
-let take_tr n lst =
-  if n >= List.length lst then lst
+(* let rec insert_at e n = function 
+  | [] -> [e]
+  | h :: t -> if n = 0 then e :: h :: t else h :: insert_at e (n-1) t *)
+
+let insert_at e n list = 
+  let rec aux e n acc = function 
+    | [] -> List.rev_append acc [e]
+    | h :: t -> if n = 0 then List.rev_append acc (e :: h :: t) else aux e (n-1) (h :: acc) t
+in aux e n [] list
+
+
+(* let range start end_ = 
+  if start < end_ then
+    let rec aux s e acc = 
+      if s = e then rev (s :: acc)
+      else aux (s+1) e (s :: acc)
+    in aux start end_ []
   else 
-    let rec aux n lst acc =
-      match lst with
-        | [] -> acc
-        | h :: t -> if n = 0 then acc else aux (n-1) t (h :: acc)
-    in aux n lst [] |> List.rev
+    let rec aux s e acc = 
+      if s = e then rev (s :: acc)
+      else aux (s-1) e (s :: acc)
+    in aux start end_ [] *)
 
-let drop n lst = 
-  if n >= List.length lst then []
-  else
-    let rec aux n = function 
-      | [] -> []
-      | _ :: t -> if n = 1 then t else aux (n-1) t
-  in aux n lst
+(* Implementation from the solution, much cleaner than mine. *)
+let range a b = 
+  let rec aux high low acc = 
+    if high >= low then aux (high - 1) low (high :: acc)
+    else acc
+  in if a < b then aux b a [] else rev (aux a b [])
+
+
+
+type 'a tree = Node of 'a * 'a tree * 'a tree | Empty
+
+let count_leaves t = 
+  let rec aux  = function 
+    | Empty -> 0
+    | Node(_, Empty, Empty) -> 1
+    | Node(_, l, r) -> (aux l) + (aux r)
+in aux t
